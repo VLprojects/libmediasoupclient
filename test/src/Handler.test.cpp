@@ -10,8 +10,6 @@ static const json TransportRemoteParameters = generateTransportRemoteParameters(
 static const json RtpParametersByKind       = generateRtpParametersByKind();
 static const json IceServers                = generateIceServers();
 
-static mediasoupclient::PeerConnection::Options PeerConnectionOptions;
-
 class FakeHandlerListener : public mediasoupclient::Handler::PrivateListener
 {
 public:
@@ -23,11 +21,14 @@ public:
 
 TEST_CASE("Handler", "[Handler]")
 {
+	MediaStreamTrackFactory& singleton = MediaStreamTrackFactory::getInstance();
 	SECTION("Handler::GetNativeRtpCapabilities() succeeds")
 	{
 		json rtpCapabilities;
 
-		REQUIRE_NOTHROW(rtpCapabilities = mediasoupclient::Handler::GetNativeRtpCapabilities());
+		REQUIRE_NOTHROW(
+		  rtpCapabilities =
+		    mediasoupclient::Handler::GetNativeRtpCapabilities(&singleton.PeerConnectionOptions));
 
 		REQUIRE(rtpCapabilities["codecs"].is_array());
 		REQUIRE(rtpCapabilities["fecMechanisms"].is_array());
@@ -38,6 +39,7 @@ TEST_CASE("Handler", "[Handler]")
 TEST_CASE("SendHandler", "[Handler][SendHandler]")
 {
 	static FakeHandlerListener handlerListener;
+	MediaStreamTrackFactory& singleton = MediaStreamTrackFactory::getInstance();
 
 	static mediasoupclient::SendHandler sendHandler(
 	  &handlerListener,
@@ -45,12 +47,9 @@ TEST_CASE("SendHandler", "[Handler][SendHandler]")
 	  TransportRemoteParameters["iceCandidates"],
 	  TransportRemoteParameters["dtlsParameters"],
 	  TransportRemoteParameters["sctpParameters"],
-	  &PeerConnectionOptions,
+	  &singleton.PeerConnectionOptions,
 	  RtpParametersByKind,
 	  RtpParametersByKind);
-
-	static std::unique_ptr<mediasoupclient::PeerConnection> pc(
-	  new mediasoupclient::PeerConnection(nullptr, &PeerConnectionOptions));
 
 	static rtc::scoped_refptr<webrtc::AudioTrackInterface> track;
 
@@ -143,6 +142,7 @@ TEST_CASE("SendHandler", "[Handler][SendHandler]")
 	SECTION("sendHandler.UpdateIceServers() succeeds")
 	{
 		REQUIRE_NOTHROW(sendHandler.UpdateIceServers(json::array()));
+		sendHandler.Close();
 	}
 }
 
@@ -157,6 +157,7 @@ TEST_CASE("RecvHandler", "[Handler][RecvHandler]")
 	static std::string localId;
 
 	static FakeHandlerListener handlerListener;
+	MediaStreamTrackFactory& singleton = MediaStreamTrackFactory::getInstance();
 
 	static mediasoupclient::RecvHandler recvHandler(
 	  &handlerListener,
@@ -164,7 +165,7 @@ TEST_CASE("RecvHandler", "[Handler][RecvHandler]")
 	  TransportRemoteParameters["iceCandidates"],
 	  TransportRemoteParameters["dtlsParameters"],
 	  TransportRemoteParameters["sctpParameters"],
-	  &PeerConnectionOptions);
+	  &singleton.PeerConnectionOptions);
 
 	SECTION("recvHander.Receive() succeeds if correct rtpParameters are provided")
 	{
@@ -205,6 +206,7 @@ TEST_CASE("RecvHandler", "[Handler][RecvHandler]")
 	SECTION("recvHandler.UpdateIceServers() succeeds with empty array")
 	{
 		REQUIRE_NOTHROW(recvHandler.UpdateIceServers(json::array()));
+		recvHandler.Close();
 	}
 
 	SECTION("recvHandler.UpdateIceServers() succeeds with non-empty array")

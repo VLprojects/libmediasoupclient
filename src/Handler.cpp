@@ -428,10 +428,10 @@ namespace mediasoupclient
 			const Sdp::RemoteSdp::MediaSectionIdx mediaSectionIdx =
 			  this->remoteSdp->GetNextMediaSectionIdx();
 
-			auto offerMediaObject =
-			  find_if(localSdpObject["media"].begin(), localSdpObject["media"].end(), [](const json& m) {
-				  return m.at("type").get<std::string>() == "application";
-			  });
+			auto offerMediaObject = find_if(
+			  localSdpObject["media"].begin(),
+			  localSdpObject["media"].end(),
+			  [](const json& m) { return m.at("type").get<std::string>() == "application"; });
 
 			if (offerMediaObject == localSdpObject["media"].end())
 			{
@@ -532,7 +532,7 @@ namespace mediasoupclient
 			MSC_THROW_ERROR("associated RtpTransceiver not found");
 
 		auto transceiver = localIdIt->second;
-		auto parameters   = transceiver->sender()->GetParameters();
+		auto parameters  = transceiver->sender()->GetParameters();
 
 		bool hasLowEncoding{ false };
 		bool hasMediumEncoding{ false };
@@ -599,7 +599,7 @@ namespace mediasoupclient
 			MSC_THROW_ERROR("associated RtpTransceiver not found");
 
 		auto transceiver = localIdIt->second;
-		auto stats        = this->pc->GetStats(transceiver->sender());
+		auto stats       = this->pc->GetStats(transceiver->sender());
 
 		return stats;
 	}
@@ -682,9 +682,9 @@ namespace mediasoupclient
 		auto answer         = this->pc->CreateAnswer(options);
 		auto localSdpObject = sdptransform::parse(answer);
 		auto mediaIt        = find_if(
-      localSdpObject["media"].begin(), localSdpObject["media"].end(), [&localId](const json& m) {
-        return m["mid"].get<std::string>() == localId;
-      });
+      localSdpObject["media"].begin(),
+      localSdpObject["media"].end(),
+      [&localId](const json& m) { return m["mid"].get<std::string>() == localId; });
 
 		auto& answerMediaObject = *mediaIt;
 
@@ -705,9 +705,10 @@ namespace mediasoupclient
 
 		auto transceivers  = this->pc->GetTransceivers();
 		auto transceiverIt = std::find_if(
-		  transceivers.begin(), transceivers.end(), [&localId](rtc::scoped_refptr<webrtc::RtpTransceiverInterface> t) {
-			  return t->mid() == localId;
-		  });
+		  transceivers.begin(),
+		  transceivers.end(),
+		  [&localId](rtc::scoped_refptr<webrtc::RtpTransceiverInterface> t)
+		  { return t->mid() == localId; });
 
 		if (transceiverIt == transceivers.end())
 			MSC_THROW_ERROR("new RTCRtpTransceiver not found");

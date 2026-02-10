@@ -11,6 +11,19 @@
 #include <api/video_codecs/builtin_video_encoder_factory.h>
 #include <rtc_base/ssl_adapter.h>
 
+#include "api/video_codecs/video_decoder_factory.h"
+#include "api/video_codecs/video_decoder_factory_template.h"
+#include "api/video_codecs/video_decoder_factory_template_dav1d_adapter.h"
+#include "api/video_codecs/video_decoder_factory_template_libvpx_vp8_adapter.h"
+#include "api/video_codecs/video_decoder_factory_template_libvpx_vp9_adapter.h"
+#include "api/video_codecs/video_decoder_factory_template_open_h264_adapter.h"
+#include "api/video_codecs/video_encoder_factory.h"
+#include "api/video_codecs/video_encoder_factory_template.h"
+#include "api/video_codecs/video_encoder_factory_template_libaom_av1_adapter.h"
+#include "api/video_codecs/video_encoder_factory_template_libvpx_vp8_adapter.h"
+#include "api/video_codecs/video_encoder_factory_template_libvpx_vp9_adapter.h"
+#include "api/video_codecs/video_encoder_factory_template_open_h264_adapter.h"
+
 using json = nlohmann::json;
 
 namespace mediasoupclient
@@ -97,8 +110,16 @@ namespace mediasoupclient
 			  nullptr /*default_adm*/,
 			  webrtc::CreateBuiltinAudioEncoderFactory(),
 			  webrtc::CreateBuiltinAudioDecoderFactory(),
-			  webrtc::CreateBuiltinVideoEncoderFactory(),
-			  webrtc::CreateBuiltinVideoDecoderFactory(),
+			  std::make_unique<webrtc::VideoEncoderFactoryTemplate<
+			    webrtc::LibvpxVp8EncoderTemplateAdapter,
+			    webrtc::LibvpxVp9EncoderTemplateAdapter,
+			    webrtc::OpenH264EncoderTemplateAdapter,
+			    webrtc::LibaomAv1EncoderTemplateAdapter>>(),
+			  std::make_unique<webrtc::VideoDecoderFactoryTemplate<
+			    webrtc::LibvpxVp8DecoderTemplateAdapter,
+			    webrtc::LibvpxVp9DecoderTemplateAdapter,
+			    webrtc::OpenH264DecoderTemplateAdapter,
+			    webrtc::Dav1dDecoderTemplateAdapter>>(),
 			  nullptr /*audio_mixer*/,
 			  nullptr /*audio_processing*/);
 		}
@@ -373,8 +394,7 @@ namespace mediasoupclient
 	{
 		MSC_TRACE();
 
-		const auto result =
-		  this->pc->CreateDataChannelOrError(label, config);
+		const auto result = this->pc->CreateDataChannelOrError(label, config);
 
 		if (result.ok())
 		{
@@ -411,9 +431,9 @@ namespace mediasoupclient
 		if (!error.ok())
 		{
 			MSC_WARN(
-					"webtc::SetLocalDescriptionObserver failure [%s:%s]",
-					webrtc::ToString(error.type()).data(),
-					error.message());
+			  "webtc::SetLocalDescriptionObserver failure [%s:%s]",
+			  webrtc::ToString(error.type()).data(),
+			  error.message());
 
 			auto message = std::string(error.message());
 
@@ -421,7 +441,6 @@ namespace mediasoupclient
 		}
 		else
 		{
-			MSC_THROW_ERROR("Failed creating data channel");
 			this->promise.set_value();
 		}
 	};
@@ -449,9 +468,9 @@ namespace mediasoupclient
 		if (!error.ok())
 		{
 			MSC_WARN(
-					"webtc::SetRemoteDescriptionObserver failure [%s:%s]",
-					webrtc::ToString(error.type()).data(),
-					error.message());
+			  "webtc::SetRemoteDescriptionObserver failure [%s:%s]",
+			  webrtc::ToString(error.type()).data(),
+			  error.message());
 
 			auto message = std::string(error.message());
 

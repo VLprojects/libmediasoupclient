@@ -1,9 +1,10 @@
+#include "mediasoupclient.hpp"
 #include "FakeTransportListener.hpp"
 #include "MediaSoupClientErrors.hpp"
 #include "MediaStreamTrackFactory.hpp"
 #include "fakeParameters.hpp"
-#include "mediasoupclient.hpp"
 #include <catch.hpp>
+#include <iostream>
 #include <vector>
 
 TEST_CASE("mediasoupclient", "[mediasoupclient]")
@@ -34,6 +35,8 @@ TEST_CASE("mediasoupclient", "[mediasoupclient]")
 
 	static json routerRtpCapabilities;
 
+	MediaStreamTrackFactory& singleton = MediaStreamTrackFactory::getInstance();
+
 	SECTION("create a Device succeeds")
 	{
 		REQUIRE_NOTHROW(device.reset(new mediasoupclient::Device()));
@@ -60,7 +63,7 @@ TEST_CASE("mediasoupclient", "[mediasoupclient]")
 		    TransportRemoteParameters["iceParameters"],
 		    TransportRemoteParameters["iceCandidates"],
 		    TransportRemoteParameters["dtlsParameters"],
-		    nullptr),
+		    &singleton.PeerConnectionOptions),
 		  MediaSoupClientInvalidStateError);
 	}
 
@@ -132,7 +135,7 @@ TEST_CASE("mediasoupclient", "[mediasoupclient]")
 		  TransportRemoteParameters["iceCandidates"],
 		  TransportRemoteParameters["dtlsParameters"],
 		  TransportRemoteParameters["sctpParameters"],
-		  nullptr,
+		  &singleton.PeerConnectionOptions,
 		  appData)));
 
 		REQUIRE(sendTransport->GetId() == TransportRemoteParameters["id"].get<std::string>());
@@ -149,7 +152,7 @@ TEST_CASE("mediasoupclient", "[mediasoupclient]")
 		  TransportRemoteParameters["iceParameters"],
 		  TransportRemoteParameters["iceCandidates"],
 		  TransportRemoteParameters["dtlsParameters"],
-		  nullptr)));
+		  &singleton.PeerConnectionOptions)));
 
 		REQUIRE(recvTransport->GetId() == TransportRemoteParameters["id"].get<std::string>());
 		REQUIRE(!recvTransport->IsClosed());
@@ -324,7 +327,7 @@ TEST_CASE("mediasoupclient", "[mediasoupclient]")
 		  TransportRemoteParameters["iceParameters"],
 		  TransportRemoteParameters["iceCandidates"],
 		  TransportRemoteParameters["dtlsParameters"],
-		  nullptr,
+		  &singleton.PeerConnectionOptions,
 		  appData)));
 
 		REQUIRE_THROWS_AS(
