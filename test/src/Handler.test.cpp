@@ -2,6 +2,7 @@
 #include "MediaSoupClientErrors.hpp"
 #include "MediaStreamTrackFactory.hpp"
 #include "fakeParameters.hpp"
+#include "ortc.hpp"
 #include <catch.hpp>
 #include <iostream>
 #include <memory>
@@ -9,6 +10,11 @@
 static const json TransportRemoteParameters = generateTransportRemoteParameters();
 static const json RtpParametersByKind       = generateRtpParametersByKind();
 static const json IceServers                = generateIceServers();
+static const json RouterRtpCapabilities     = generateRouterRtpCapabilities();
+static const auto getSendCapabilities       = [](json& currentLocalRtpCapabilities) {
+			auto routerRtpCapabilitiesCopy = RouterRtpCapabilities;
+			return mediasoupclient::ortc::getExtendedRtpCapabilities(currentLocalRtpCapabilities, routerRtpCapabilitiesCopy);
+		};
 
 class FakeHandlerListener : public mediasoupclient::Handler::PrivateListener
 {
@@ -48,10 +54,9 @@ TEST_CASE("SendHandler", "[Handler][SendHandler]")
 	  TransportRemoteParameters["dtlsParameters"],
 	  TransportRemoteParameters["sctpParameters"],
 	  &singleton.PeerConnectionOptions,
-	  RtpParametersByKind,
-	  RtpParametersByKind);
+	  getSendCapabilities);
 
-	static rtc::scoped_refptr<webrtc::AudioTrackInterface> track;
+	static webrtc::scoped_refptr<webrtc::AudioTrackInterface> track;
 
 	static std::string localId;
 
